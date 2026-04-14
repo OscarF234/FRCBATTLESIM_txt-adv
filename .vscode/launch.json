@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Main",
+            "request": "launch",
+            "mainClass": "Main",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "encoding": "UTF-8",
+            "vmArgs": "-Dstdout.encoding=UTF-8 -Dfile.encoding=UTF-8"
+        }
+    ]
+}
