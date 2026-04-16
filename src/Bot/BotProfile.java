@@ -2,6 +2,8 @@ package Bot;
 
 public class BotProfile {
 
+    private static final int MAX_HEALTH = 50;
+
     private int health;
     private String teamNumber;
     private String teamName;
@@ -12,7 +14,7 @@ public class BotProfile {
     private int[]pos;
 
     public BotProfile(String teamNumber, String teamName, Item drive, Item weapon, Item armor, Item power) {
-        this.health = 100;
+        this.health = MAX_HEALTH;
         this.teamNumber = teamNumber;
         this.teamName = teamName;
         this.drive = drive;

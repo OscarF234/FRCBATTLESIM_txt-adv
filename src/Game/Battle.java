@@ -1,13 +1,13 @@
 package Game;
 
+import Bot.BotProfile;
+import Rooms.Room;
+import Rooms.RoomType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
-import Bot.BotProfile;
-import Rooms.Room;
-import Rooms.RoomType;
 
 public class Battle {
 
@@ -17,8 +17,9 @@ public class Battle {
     public static void BattleScene(Scanner s, Room room, Player player, Random random) {
 
         if (!room.isClear()) {
-            System.out.println("The Battle Begins!");
-            System.out.println("Team 7558 ALT-F4 vs Team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + "!");
+            TextFormatter.printTitle("Battle Start");
+            TextFormatter.printInfo("Team 7558 ALT-F4 vs Team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + "!");
+            balanceEnemyForRoom(room);
 
             player.setPos(3, 3);
             room.getBotProfile().setPos(0, 0);
@@ -33,164 +34,137 @@ public class Battle {
                     break;
                 }
 
-                System.out.println("Your health: " + player.getHealth());
-                System.out.println("Enemy health: " + room.getBotProfile().getHealth());
+                TextFormatter.printSection("Battlefield");
+                TextFormatter.printBattleStatus("Team " + room.getBotProfile().getTeamNumber(), player.getHealth(), room.getBotProfile().getHealth());
 
                 drawField(room.getBotProfile(), player);
 
-                System.out.println("Make a move!");
-                System.out.println("1) Move");
-                System.out.println("2) Attack");
+                int enemyAction = 0;
+                int enemyDirection = 0;
+                int enemyMoveAmount = 0;
 
-                System.out.print("Enter your next move: ");
+                if (room.getBotProfile().getHealth() > 0 && player.getHealth() > 0) {
+                    int skill = getBotSkill(room.getBotProfile(), room.getType());
+                    enemyAction = chooseEnemyAction(room.getBotProfile(), player, skill);
+
+                    if (enemyAction == 1) {
+                        int[] enemyMoveChoice = chooseEnemyMove(room.getBotProfile(), player, skill);
+                        enemyDirection = enemyMoveChoice[0];
+                        enemyMoveAmount = enemyMoveChoice[1];
+                    } else if (enemyAction == 2) {
+                        enemyDirection = chooseEnemyAttackDirection(room.getBotProfile(), player, skill);
+                    }
+                }
+
+                TextFormatter.printMenu("Choose action:", "[M] Move", "[F] Attack");
+                TextFormatter.printPrompt("Action >");
                     
-                String input = s.next();
+                String input = s.next().toLowerCase();
                 int playerAction = 0;
                 int playerDirection = 0;
                  
                 while (true) { 
 
-                    if (input.equals("1")) {
+                    if (isMoveInput(input)) {
 
                         while (true) {
 
-                            System.out.println("1) left");
-                            System.out.println("2) right");
-                            System.out.println("3) up");
-                            System.out.println("4) down");
-                            System.out.print("Enter direction: ");
+                            TextFormatter.printMenu("Choose direction:", "[W] Up", "[A] Left", "[S] Down", "[D] Right");
+                            TextFormatter.printPrompt("Direction >");
 
-                            String dir = s.next();
+                            String dir = s.next().toLowerCase();
+                            int direction = parseDirection(dir);
+                            int maxMoveAmount = getMaxMoveAmount(player.getPos(), direction, player.getPlayerMovement());
 
-                            if (dir.equals("1") && player.getPos()[0] - player.getPlayerMovement() >= 0) {
+                            if (maxMoveAmount > 0) {
+                                while (true) {
+                                    TextFormatter.printPrompt("Squares to move (1-" + maxMoveAmount + ") >");
+                                    String moveAmountInput = s.next();
 
-                                playerAction = 1;
-                                playerDirection = 1;
-                                player.changePos(-1 * player.getPlayerMovement(), 0);
-                                int heal = player.heal(random);
-                                System.out.println("You heal for " + heal + " health!");
-                                break;
+                                    if (isValidMoveAmount(moveAmountInput, maxMoveAmount)) {
+                                        int moveAmount = Integer.parseInt(moveAmountInput);
+                                        playerAction = 1;
+                                        playerDirection = direction;
+                                        movePlayer(player, direction, moveAmount);
+                                        int heal = player.heal(random);
+                                        TextFormatter.printInfo("You move " + getDirectionName(direction) + " " + moveAmount + " square" + getPlural(moveAmount) + ".");
+                                        TextFormatter.printInfo("You heal for " + heal + " health.");
+                                        break;
+                                    }
+
+                                    TextFormatter.printWarning("Invalid number of squares.");
+                                }
+
+                                if (playerAction == 1) {
+                                    break;
+                                }
                             }
 
-                            if (dir.equals("2") && player.getPos()[0] + player.getPlayerMovement() <= 3) {
-
-                                playerAction = 1;
-                                playerDirection = 2;
-                                player.changePos(player.getPlayerMovement(), 0);
-                                int heal = player.heal(random);
-                                System.out.println("You heal for " + heal + " health!");
-                                break;
-                            }
-
-                            if (dir.equals("3") && player.getPos()[1] - player.getPlayerMovement() >= 0) {
-
-                                playerAction = 1;
-                                playerDirection = 3;
-                                player.changePos(0, -1 * player.getPlayerMovement());
-                                int heal = player.heal(random);
-                                System.out.println("You heal for " + heal + " health!");
-                                break;
-                            }
-
-                            if (dir.equals("4") && player.getPos()[1] + player.getPlayerMovement() <= 3) {
-
-                                playerAction = 1;
-                                playerDirection = 4;
-                                player.changePos(0, player.getPlayerMovement());
-                                int heal = player.heal(random);
-                                System.out.println("You heal for " + heal + " health!");
-                                break;
-                            }
-
-                            System.out.println("Invalid direction.");
+                            TextFormatter.printWarning("Invalid direction.");
                         }
 
                         break;
 
-                    } else if (input.equals("2")) {
+                    } else if (isAttackInput(input)) {
 
                         while (true) {
 
-                            System.out.println("1) left");
-                            System.out.println("2) right");
-                            System.out.println("3) up");
-                            System.out.println("4) down");
-                            System.out.print("Enter direction: ");
+                            TextFormatter.printMenu("Choose attack direction:", "[W] Up", "[A] Left", "[S] Down", "[D] Right");
+                            TextFormatter.printPrompt("Direction >");
 
-                            String dir = s.next();
+                            String dir = s.next().toLowerCase();
+                            int direction = parseDirection(dir);
 
-                            if (dir.equals("1")) {
-
+                            if (direction != 0) {
                                 playerAction = 2;
-                                playerDirection = 1;
+                                playerDirection = direction;
                                 break;
                             }
 
-                            if (dir.equals("2")) {
-
-                                playerAction = 2;
-                                playerDirection = 2;
-                                break;
-                            }
-
-                            if (dir.equals("3")) {
-
-                                playerAction = 2;
-                                playerDirection = 3;
-                                break;
-                            }
-
-                            if (dir.equals("4")) {
-
-                                playerAction = 2;
-                                playerDirection = 4;
-                                break;
-                            }
-
-                            System.out.println("Invalid direction.");
+                            TextFormatter.printWarning("Invalid direction.");
                         }
 
                         break;
+                        
+                    } else {
+
+                    TextFormatter.printWarning("Invalid action.");
+                    TextFormatter.printMenu("Choose action:", "[M] Move", "[F] Attack");
+                    TextFormatter.printPrompt("Action >");
+                    input = s.next().toLowerCase();
+
                     }
-
 
                 }
 
-                int enemyAction = 0;
-                int enemyDirection = 0;
-
                 if (room.getBotProfile().getHealth() > 0 && player.getHealth() > 0) {
-                    int skill = getBotSkill(room.getBotProfile(), room.getType());
-                    enemyAction = chooseEnemyAction(room.getBotProfile(), player, skill);
-                    enemyDirection = chooseEnemyDirection(room.getBotProfile(), player, enemyAction, skill);
-
                     if (enemyDirection == 0) {
-                        System.out.println("Team " + room.getBotProfile().getTeamNumber() + " hesitates.");
+                        TextFormatter.printInfo("Team " + room.getBotProfile().getTeamNumber() + " hesitates.");
                     } else if (enemyAction == 1) {
-                        moveBot(room.getBotProfile(), enemyDirection);
-                        System.out.println("Team " + room.getBotProfile().getTeamNumber() + " moves " + getDirectionName(enemyDirection) + ".");
+                        moveBot(room.getBotProfile(), enemyDirection, enemyMoveAmount);
+                        TextFormatter.printInfo("Team " + room.getBotProfile().getTeamNumber() + " moves " + getDirectionName(enemyDirection) + " " + enemyMoveAmount + " square" + getPlural(enemyMoveAmount) + ".");
                     }
                 }
 
                 if (Arrays.equals(room.getBotProfile().getPos(),player.getPos())) {
 
-                    System.out.println("A collision happens!");
+                    TextFormatter.printWarning("Collision!");
 
-                    int dmg = random.nextInt(30);
+                    int dmg = getCollisionDamage(random, room.getType());
 
                     if (room.getBotProfile().getDrive().getMag() > player.getPlayerMovement()) {
-                        System.out.println("Team " + room.getBotProfile().getTeamNumber() + " has the superior drivetrain and rams 7558 for " + dmg + " damage!");
-                        player.hitPlayer(dmg);
+                        TextFormatter.printWarning("Team " + room.getBotProfile().getTeamNumber() + " has the superior drivetrain and rams 7558 for " + dmg + " damage!");
+                        player.hitPlayer(Math.max(dmg - player.getPlayerArmor(), 0));
                     } else if (room.getBotProfile().getDrive().getMag() < player.getPlayerMovement()) {
-                        System.out.println("Team 7558 has the superior drivetrain and rams team" + room.getBotProfile().getTeamNumber() + " for " + dmg + " damage!");
-                        room.getBotProfile().damageBot(dmg);
+                        TextFormatter.printSuccess("Team 7558 has the superior drivetrain and rams team " + room.getBotProfile().getTeamNumber() + " for " + dmg + " damage!");
+                        room.getBotProfile().damageBot(Math.max(dmg - room.getBotProfile().getArmor().getMag(), 0));
                     } else {
                         if (random.nextInt(2) == 1) {
-                            System.out.println("With evenly matched drivetrains, team " + room.getBotProfile().getTeamNumber() + " gets lucky and hits team 7558 for " + dmg + " damage!");
-                            player.hitPlayer(dmg);
+                            TextFormatter.printWarning("With evenly matched drivetrains, team " + room.getBotProfile().getTeamNumber() + " gets lucky and hits team 7558 for " + dmg + " damage!");
+                            player.hitPlayer(Math.max(dmg - player.getPlayerArmor(), 0));
                         } else {
-                            System.out.println("With evenly matched drivetrains, team 7558 gets lucky and hits team" + room.getBotProfile().getTeamNumber() + " for " + dmg + " damage!");
-                            room.getBotProfile().damageBot(dmg);
+                            TextFormatter.printSuccess("With evenly matched drivetrains, team 7558 gets lucky and hits team " + room.getBotProfile().getTeamNumber() + " for " + dmg + " damage!");
+                            room.getBotProfile().damageBot(Math.max(dmg - room.getBotProfile().getArmor().getMag(), 0));
                         }
                     }
                 }
@@ -200,18 +174,22 @@ public class Battle {
                 }
 
                 if (enemyAction == 2 && enemyDirection != 0 && room.getBotProfile().getHealth() > 0 && player.getHealth() > 0) {
-                    performEnemyAttack(room.getBotProfile(), player, enemyDirection);
+                    performEnemyAttack(room.getBotProfile(), player, enemyDirection, room.getType());
                 }
             }
 
             if (room.getBotProfile().getHealth() <= 0) {
-                System.out.println("Team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + " has been defeated!");
+                TextFormatter.printSuccess("Team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + " has been defeated!");
                 room.setCleared(true);
+
+                int gain = random.nextInt(50);
+                System.out.println("You gain " + gain + " credits!");
+                player.increaseCredits(gain);
             } else if (player.getHealth() <= 0) {
-                System.out.println("ALT-F4 has been destroyed!");
+                TextFormatter.printWarning("ALT-F4 has been destroyed!");
             }
         } else {
-            System.out.println("The remains of team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + " lies here...");
+            TextFormatter.printInfo("The remains of team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + " lie here...");
         }
     }
 
@@ -247,18 +225,22 @@ public class Battle {
 
     private static int chooseEnemyAction(BotProfile bot, Player player, int skill) {
         List<Integer> attackDirections = getAttackDirections(bot, player);
-        List<Integer> moveDirections = getMoveDirections(bot);
+        List<int[]> moveChoices = getMoveChoices(bot);
         boolean smartChoice = BATTLE_RANDOM.nextInt(100) < 5 + skill * 10;
+
+        if (!attackDirections.isEmpty() && BATTLE_RANDOM.nextInt(100) < 35 + skill * 10) {
+            return 2;
+        }
 
         if (smartChoice && !attackDirections.isEmpty()) {
             return 2;
         }
 
-        if (smartChoice && !moveDirections.isEmpty()) {
+        if (smartChoice && !moveChoices.isEmpty()) {
             return 1;
         }
 
-        if (moveDirections.isEmpty()) {
+        if (moveChoices.isEmpty()) {
             return 2;
         }
 
@@ -266,51 +248,71 @@ public class Battle {
             return 1;
         }
 
-        if (BATTLE_RANDOM.nextInt(100) < 65) {
+        if (BATTLE_RANDOM.nextInt(100) < 55) {
             return 1;
         }
 
         return 2;
     }
 
-    private static int chooseEnemyDirection(BotProfile bot, Player player, int action, int skill) {
-        List<Integer> possibleDirections;
+    private static int[] chooseEnemyMove(BotProfile bot, Player player, int skill) {
+        List<int[]> possibleMoves = getMoveChoices(bot);
 
-        if (action == 1) {
-            possibleDirections = getMoveDirections(bot);
-        } else {
-            possibleDirections = getAttackDirections(bot, player);
+        if (possibleMoves.isEmpty()) {
+            return new int[] { 0, 0 };
         }
+
+        if (BATTLE_RANDOM.nextInt(100) < Math.max(0, 16 - skill * 2)) {
+            return new int[] { 0, 0 };
+        }
+
+        boolean smartChoice = BATTLE_RANDOM.nextInt(100) < 15 + skill * 10;
+
+        if (!smartChoice) {
+            return possibleMoves.get(BATTLE_RANDOM.nextInt(possibleMoves.size()));
+        }
+
+        return getBestMoveChoice(bot, player, possibleMoves);
+    }
+
+    private static int chooseEnemyAttackDirection(BotProfile bot, Player player, int skill) {
+        List<Integer> possibleDirections = getAttackDirections(bot, player);
 
         if (possibleDirections.isEmpty()) {
             return 0;
         }
 
-        if (BATTLE_RANDOM.nextInt(100) < Math.max(0, 28 - skill * 4)) {
-            return 0;
-        }
-
-        boolean smartChoice = BATTLE_RANDOM.nextInt(100) < 10 + skill * 10;
+        boolean smartChoice = BATTLE_RANDOM.nextInt(100) < 15 + skill * 10;
 
         if (!smartChoice) {
             return possibleDirections.get(BATTLE_RANDOM.nextInt(possibleDirections.size()));
         }
 
-        return getBestDirection(bot, player, possibleDirections, action);
+        return getBestAttackDirection(bot, player, possibleDirections);
     }
 
-    private static int getBestDirection(BotProfile bot, Player player, List<Integer> possibleDirections, int action) {
+    private static int[] getBestMoveChoice(BotProfile bot, Player player, List<int[]> possibleMoves) {
+        int[] bestMove = possibleMoves.get(0);
+        int bestScore = Integer.MIN_VALUE;
+
+        for (int[] moveChoice : possibleMoves) {
+            int score = scoreMoveChoice(bot, player, moveChoice[0], moveChoice[1]);
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = moveChoice;
+            }
+        }
+
+        return bestMove;
+    }
+
+    private static int getBestAttackDirection(BotProfile bot, Player player, List<Integer> possibleDirections) {
         int bestDirection = possibleDirections.get(0);
         int bestScore = Integer.MIN_VALUE;
 
         for (int direction : possibleDirections) {
-            int score;
-
-            if (action == 1) {
-                score = scoreMoveDirection(bot, player, direction);
-            } else {
-                score = scoreAttackDirection(bot, player, direction);
-            }
+            int score = scoreAttackDirection(bot, player, direction);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -321,8 +323,7 @@ public class Battle {
         return bestDirection;
     }
 
-    private static int scoreMoveDirection(BotProfile bot, Player player, int direction) {
-        int moveAmount = bot.getDrive().getMag();
+    private static int scoreMoveChoice(BotProfile bot, Player player, int direction, int moveAmount) {
         int nextX = bot.getPos()[0];
         int nextY = bot.getPos()[1];
 
@@ -362,54 +363,45 @@ public class Battle {
         return player.getPos()[1] - bot.getPos()[1];
     }
 
-    private static List<Integer> getMoveDirections(BotProfile bot) {
-        List<Integer> directions = new ArrayList<>();
-        int moveAmount = bot.getDrive().getMag();
+    private static List<int[]> getMoveChoices(BotProfile bot) {
+        List<int[]> moveChoices = new ArrayList<>();
+        int maxMoveAmount = bot.getDrive().getMag();
 
-        if (bot.getPos()[0] - moveAmount >= 0) {
-            directions.add(1);
+        for (int direction = 1; direction <= 4; direction++) {
+            int legalMoveAmount = getMaxMoveAmount(bot.getPos(), direction, maxMoveAmount);
+
+            for (int moveAmount = 1; moveAmount <= legalMoveAmount; moveAmount++) {
+                moveChoices.add(new int[] { direction, moveAmount });
+            }
         }
 
-        if (bot.getPos()[0] + moveAmount < FIELD_SIZE) {
-            directions.add(2);
-        }
-
-        if (bot.getPos()[1] - moveAmount >= 0) {
-            directions.add(3);
-        }
-
-        if (bot.getPos()[1] + moveAmount < FIELD_SIZE) {
-            directions.add(4);
-        }
-
-        return directions;
+        return moveChoices;
     }
 
     private static List<Integer> getAttackDirections(BotProfile bot, Player player) {
         List<Integer> directions = new ArrayList<>();
+        int range = bot.getWeapon().getRange();
 
-        if (player.getPos()[1] == bot.getPos()[1] && player.getPos()[0] < bot.getPos()[0]) {
+        if (isTargetInDirection(bot.getPos(), player.getPos(), 1, range)) {
             directions.add(1);
         }
 
-        if (player.getPos()[1] == bot.getPos()[1] && player.getPos()[0] > bot.getPos()[0]) {
+        if (isTargetInDirection(bot.getPos(), player.getPos(), 2, range)) {
             directions.add(2);
         }
 
-        if (player.getPos()[0] == bot.getPos()[0] && player.getPos()[1] < bot.getPos()[1]) {
+        if (isTargetInDirection(bot.getPos(), player.getPos(), 3, range)) {
             directions.add(3);
         }
 
-        if (player.getPos()[0] == bot.getPos()[0] && player.getPos()[1] > bot.getPos()[1]) {
+        if (isTargetInDirection(bot.getPos(), player.getPos(), 4, range)) {
             directions.add(4);
         }
 
         return directions;
     }
 
-    private static void moveBot(BotProfile bot, int direction) {
-        int moveAmount = bot.getDrive().getMag();
-
+    private static void moveBot(BotProfile bot, int direction, int moveAmount) {
         if (direction == 1) {
             bot.changePos(-1 * moveAmount, 0);
         }
@@ -427,64 +419,133 @@ public class Battle {
         }
     }
 
-    private static void performPlayerAttack(BotProfile bot, Player player, int direction) {
-        System.out.println("ALT-F4 attacks " + getDirectionName(direction) + ".");
+    private static void movePlayer(Player player, int direction, int moveAmount) {
+        if (direction == 1) {
+            player.changePos(-1 * moveAmount, 0);
+        }
 
-        if (!isTargetInDirection(player.getPos(), bot.getPos(), direction)) {
-            System.out.println("The attack hits nothing.");
+        if (direction == 2) {
+            player.changePos(moveAmount, 0);
+        }
+
+        if (direction == 3) {
+            player.changePos(0, -1 * moveAmount);
+        }
+
+        if (direction == 4) {
+            player.changePos(0, moveAmount);
+        }
+    }
+
+    private static void performPlayerAttack(BotProfile bot, Player player, int direction) {
+        TextFormatter.printInfo("ALT-F4 attacks " + getDirectionName(direction) + ".");
+
+        if (!isTargetInDirection(player.getPos(), bot.getPos(), direction, player.getPlayerRange())) {
+            TextFormatter.printWarning("The attack hits nothing.");
             return;
         }
 
         if (!player.getSuccessfulHit(BATTLE_RANDOM)) {
-            System.out.println("The attack misses!");
+            TextFormatter.printWarning("The attack misses!");
             return;
         }
 
         int damage = calculateDamage(player.getPlayerDamage(), bot.getArmor().getMag());
         bot.damageBot(damage);
-        System.out.println("Direct hit for " + damage + " damage!");
+        TextFormatter.printSuccess("Direct hit for " + damage + " damage!");
     }
 
-    private static void performEnemyAttack(BotProfile bot, Player player, int direction) {
-        System.out.println("Team " + bot.getTeamNumber() + " attacks " + getDirectionName(direction) + ".");
+    private static void performEnemyAttack(BotProfile bot, Player player, int direction, RoomType roomType) {
+        TextFormatter.printInfo("Team " + bot.getTeamNumber() + " attacks " + getDirectionName(direction) + ".");
 
-        if (!isTargetInDirection(bot.getPos(), player.getPos(), direction)) {
-            System.out.println("The enemy attack hits nothing.");
+        if (!isTargetInDirection(bot.getPos(), player.getPos(), direction, bot.getWeapon().getRange())) {
+            TextFormatter.printWarning("The enemy attack hits nothing.");
             return;
         }
 
-        if (!botSuccessfulHit(bot)) {
-            System.out.println("The enemy attack misses!");
+        if (!botSuccessfulHit(bot, roomType)) {
+            TextFormatter.printWarning("The enemy attack misses!");
             return;
         }
 
-        int damage = calculateDamage(bot.getWeapon().getMag(), player.getPlayerArmor());
+        int damage = calculateEnemyDamage(bot.getWeapon().getMag(), player.getPlayerArmor(), roomType);
         player.hitPlayer(damage);
-        System.out.println("ALT-F4 takes " + damage + " damage!");
+        TextFormatter.printWarning("ALT-F4 takes " + damage + " damage!");
     }
 
-    private static boolean isTargetInDirection(int[] attackerPos, int[] targetPos, int direction) {
+    private static boolean isTargetInDirection(int[] attackerPos, int[] targetPos, int direction, int range) {
         if (direction == 1) {
-            return targetPos[1] == attackerPos[1] && targetPos[0] < attackerPos[0];
+            return targetPos[1] == attackerPos[1]
+                && targetPos[0] < attackerPos[0]
+                && attackerPos[0] - targetPos[0] <= range;
         }
 
         if (direction == 2) {
-            return targetPos[1] == attackerPos[1] && targetPos[0] > attackerPos[0];
+            return targetPos[1] == attackerPos[1]
+                && targetPos[0] > attackerPos[0]
+                && targetPos[0] - attackerPos[0] <= range;
         }
 
         if (direction == 3) {
-            return targetPos[0] == attackerPos[0] && targetPos[1] < attackerPos[1];
+            return targetPos[0] == attackerPos[0]
+                && targetPos[1] < attackerPos[1]
+                && attackerPos[1] - targetPos[1] <= range;
         }
 
-        return targetPos[0] == attackerPos[0] && targetPos[1] > attackerPos[1];
+        return targetPos[0] == attackerPos[0]
+            && targetPos[1] > attackerPos[1]
+            && targetPos[1] - attackerPos[1] <= range;
     }
 
-    private static boolean botSuccessfulHit(BotProfile bot) {
-        return BATTLE_RANDOM.nextInt(100) < bot.getPower().getMag();
+    private static boolean botSuccessfulHit(BotProfile bot, RoomType roomType) {
+        int hitChance = bot.getPower().getMag();
+
+        if (roomType == RoomType.BATTLE) {
+            hitChance -= 24;
+        }
+
+        if (roomType == RoomType.BOSS) {
+            hitChance -= 5;
+        }
+
+        hitChance = Math.max(30, Math.min(hitChance, 95));
+        return BATTLE_RANDOM.nextInt(100) < hitChance;
     }
 
     private static int calculateDamage(int attack, int defense) {
-        return Math.max(5, attack - defense / 2);
+        return Math.max(8, attack - defense / 2);
+    }
+
+    private static int calculateEnemyDamage(int attack, int defense, RoomType roomType) {
+        int damage = calculateDamage(attack, defense);
+
+        if (roomType == RoomType.BATTLE) {
+            return Math.max(5, damage / 2 + 2);
+        }
+
+        if (roomType == RoomType.BOSS) {
+            return Math.max(7, damage - 4);
+        }
+
+        return damage;
+    }
+
+    private static int getCollisionDamage(Random random, RoomType roomType) {
+        if (roomType == RoomType.BATTLE) {
+            return 6 + random.nextInt(10);
+        }
+
+        if (roomType == RoomType.BOSS) {
+            return 10 + random.nextInt(14);
+        }
+
+        return 14 + random.nextInt(16);
+    }
+
+    private static void balanceEnemyForRoom(Room room) {
+        if (room.getType() == RoomType.BATTLE && room.getBotProfile().getHealth() > 75) {
+            room.getBotProfile().damageBot(room.getBotProfile().getHealth() - 75);
+        }
     }
 
     private static int getBotSkill(BotProfile bot) {
@@ -528,6 +589,63 @@ public class Battle {
         return skill;
     }
 
+    private static boolean isMoveInput(String input) {
+        return input.equals("1") || input.equals("m") || input.equals("move");
+    }
+
+    private static boolean isAttackInput(String input) {
+        return input.equals("2") || input.equals("f") || input.equals("attack");
+    }
+
+    private static int parseDirection(String input) {
+        if (input.equals("a") || input.equals("left") || input.equals("1")) {
+            return 1;
+        }
+
+        if (input.equals("d") || input.equals("right") || input.equals("2")) {
+            return 2;
+        }
+
+        if (input.equals("w") || input.equals("up") || input.equals("3")) {
+            return 3;
+        }
+
+        if (input.equals("s") || input.equals("down") || input.equals("4")) {
+            return 4;
+        }
+
+        return 0;
+    }
+
+    private static int getMaxMoveAmount(int[] pos, int direction, int maxMoveAmount) {
+        if (direction == 1) {
+            return Math.min(maxMoveAmount, pos[0]);
+        }
+
+        if (direction == 2) {
+            return Math.min(maxMoveAmount, FIELD_SIZE - 1 - pos[0]);
+        }
+
+        if (direction == 3) {
+            return Math.min(maxMoveAmount, pos[1]);
+        }
+
+        if (direction == 4) {
+            return Math.min(maxMoveAmount, FIELD_SIZE - 1 - pos[1]);
+        }
+
+        return 0;
+    }
+
+    private static boolean isValidMoveAmount(String input, int maxMoveAmount) {
+        try {
+            int moveAmount = Integer.parseInt(input);
+            return moveAmount >= 1 && moveAmount <= maxMoveAmount;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
     private static String getDirectionName(int direction) {
         if (direction == 1) {
             return "left";
@@ -542,5 +660,13 @@ public class Battle {
         }
 
         return "down";
+    }
+
+    private static String getPlural(int amount) {
+        if (amount == 1) {
+            return "";
+        }
+
+        return "s";
     }
 }

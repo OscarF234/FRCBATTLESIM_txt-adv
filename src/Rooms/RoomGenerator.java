@@ -448,12 +448,12 @@ public class RoomGenerator {
             return new Item[0];
         }
 
-        int itemCount = 1 + random.nextInt(2);
+        int itemCount = 3;
         Item[] items = new Item[itemCount];
 
         for (int i = 0; i < itemCount; i++) {
             Item template = ITEM_POOL[random.nextInt(ITEM_POOL.length)];
-            items[i] = new Item(template.getItemId(), template.getSubsystem(), template.getMag());
+            items[i] = new Item(template.getItemId(), template.getSubsystem(), template.getMag(), template.getRange(), template.getPrice());
         }
 
         return items;

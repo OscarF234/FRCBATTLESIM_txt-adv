@@ -7,8 +7,8 @@ public class MapMovement {
 
     public static int Move(Scanner s, Room[] rooms, int currRoom) {
         
-        System.out.print("\nEnter next move: ");
-        String input = s.next();
+        TextFormatter.printPrompt("Map move [W/A/S/D] >");
+        String input = s.next().toLowerCase();
 
         while (true) {
             
@@ -78,8 +78,9 @@ public class MapMovement {
                 }
             }
                             
-            System.out.println("\nInvalid move, enter next move: ");
-            input = s.next();
+            TextFormatter.printWarning("Invalid move. Pick a connected room.");
+            TextFormatter.printPrompt("Map move [W/A/S/D] >");
+            input = s.next().toLowerCase();
 
             }
 
