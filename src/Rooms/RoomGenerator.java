@@ -450,9 +450,12 @@ public class RoomGenerator {
 
         int itemCount = 3;
         Item[] items = new Item[itemCount];
+        List<Item> availableItems = new ArrayList<>(Arrays.asList(ITEM_POOL));
+
+        Collections.shuffle(availableItems, random);
 
         for (int i = 0; i < itemCount; i++) {
-            Item template = ITEM_POOL[random.nextInt(ITEM_POOL.length)];
+            Item template = availableItems.get(i);
             items[i] = new Item(template.getItemId(), template.getSubsystem(), template.getMag(), template.getRange(), template.getPrice());
         }
 

@@ -18,21 +18,28 @@ public class Main {
 
         TextFormatter.printTitle("FRC Battle Simulator");
         System.out.println();
-        TextFormatter.printInfo("Enter a seed to start your run.");
+        TextFormatter.printInfo("Enter a seed to start your run or 0 for a random seed.");
         TextFormatter.printPrompt("Seed >");
 
         int seed = Integer.parseInt(s.next());
 
-        Random random = new Random(seed);
+        Random random;
+
+        if (seed != 0) {
+            random = new Random(seed);
+        } else {
+            random = new Random((int) ((Math.random() - 0.5) * 2000000000));
+        }
 
         Room[] rooms;
 
         rooms = new RoomGenerator().generateRooms(random);
-        // rooms = new RoomGenerator().generateRooms(new Random((int) ((Math.random() - 0.5) * 2000000000)));
 
         int currRoom = 0;
         rooms[currRoom].setUnlocked(true);
         rooms[currRoom].setVisited(true);
+
+        boolean first = true;
 
         while (true) {
 
@@ -48,9 +55,17 @@ public class Main {
             RoomDisplay.displayRooms(rooms, currRoom);
             TextFormatter.printInfo("\nST Start | BA Battle | IT Item | BO Boss | FB Final Boss");
 
+            if (first) {
+                TextFormatter.printSection("Start Room");
+                TextFormatter.printInfo("You are in the starting room.");
+                first = false;
+            }
+
+            currRoom = MapMovement.Move(s, rooms, currRoom);
+
             if (rooms[currRoom].getType() == RoomType.BATTLE) {
 
-                Game.Battle.BattleScene(s, rooms[currRoom], player, random);
+                Game.Battle.BattleScene(s, rooms[currRoom], player, random, false);
 
             } else if (rooms[currRoom].getType() == RoomType.ITEM) {
 
@@ -59,12 +74,12 @@ public class Main {
             } else if (rooms[currRoom].getType() == RoomType.BOSS) {
 
                 TextFormatter.printSection("BOSS BATTLE");
-                Game.Battle.BattleScene(s, rooms[currRoom], player, random);
+                Game.Battle.BattleScene(s, rooms[currRoom], player, random, true);
                     
             } else if (rooms[currRoom].getType() == RoomType.FINAL_BOSS) {
 
                 TextFormatter.printSection("FINAL BOSS BATTLE");
-                Game.Battle.BattleScene(s, rooms[currRoom], player, random);
+                Game.Battle.BattleScene(s, rooms[currRoom], player, random, true);
                 break;
                     
             } else if (rooms[currRoom].getType() == RoomType.START) {
@@ -74,11 +89,11 @@ public class Main {
 
             }
 
-            currRoom = MapMovement.Move(s, rooms, currRoom);
-
         }
 
-        System.out.println("You win!");
-        System.out.println("Blue banner is yours!");
+        if (player.getHealth() >= 0) {
+            System.out.println("You win!");
+            System.out.println("Blue banner is yours!");
+        }
     }
 }

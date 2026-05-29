@@ -65,7 +65,7 @@ public class Player {
     }
 
     public int heal(Random random) {
-        int heal = random.nextInt(20);
+        int heal = 4 + random.nextInt(17);
         this.health = Math.min(this.health + heal, MAX_HEALTH);
         return heal;
     }

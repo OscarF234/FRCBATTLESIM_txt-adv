@@ -48,6 +48,24 @@ public class Room {
         return this.items;
     }
 
+    public Item getItem(int index) {
+        return this.items[index];
+    }
+
+    public void markItemSold(int index) {
+        this.items[index] = null;
+    }
+
+    public boolean hasItemsForSale() {
+        for (Item item : this.items) {
+            if (item != null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public BotProfile getBotProfile() {
         return this.botProfile;
     }

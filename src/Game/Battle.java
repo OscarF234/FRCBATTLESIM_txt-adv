@@ -9,12 +9,17 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
+//enemy actions were vibe coded everything else was me
+
 public class Battle {
 
     private static final int FIELD_SIZE = 4;
+    private static final int REGULAR_BATTLE_HEALTH_CAP = 42;
+    private static final int BOSS_HEALTH_CAP = 46;
+    private static final int FINAL_BOSS_HEALTH_CAP = 48;
     private static final Random BATTLE_RANDOM = new Random();
 
-    public static void BattleScene(Scanner s, Room room, Player player, Random random) {
+    public static void BattleScene(Scanner s, Room room, Player player, Random random, boolean boss) {
 
         if (!room.isClear()) {
             TextFormatter.printTitle("Battle Start");
@@ -182,7 +187,12 @@ public class Battle {
                 TextFormatter.printSuccess("Team " + room.getBotProfile().getTeamNumber() + " " + room.getBotProfile().getTeamName() + " has been defeated!");
                 room.setCleared(true);
 
-                int gain = random.nextInt(50);
+                int gain;
+                if (boss) {
+                    gain = random.nextInt(100);
+                } else {
+                    gain = random.nextInt(50);
+                }
                 System.out.println("You gain " + gain + " credits!");
                 player.increaseCredits(gain);
             } else if (player.getHealth() <= 0) {
@@ -543,8 +553,18 @@ public class Battle {
     }
 
     private static void balanceEnemyForRoom(Room room) {
-        if (room.getType() == RoomType.BATTLE && room.getBotProfile().getHealth() > 75) {
-            room.getBotProfile().damageBot(room.getBotProfile().getHealth() - 75);
+        int healthCap = 0;
+
+        if (room.getType() == RoomType.BATTLE) {
+            healthCap = REGULAR_BATTLE_HEALTH_CAP;
+        } else if (room.getType() == RoomType.BOSS) {
+            healthCap = BOSS_HEALTH_CAP;
+        } else if (room.getType() == RoomType.FINAL_BOSS) {
+            healthCap = FINAL_BOSS_HEALTH_CAP;
+        }
+
+        if (healthCap > 0 && room.getBotProfile().getHealth() > healthCap) {
+            room.getBotProfile().damageBot(room.getBotProfile().getHealth() - healthCap);
         }
     }
 
@@ -590,27 +610,27 @@ public class Battle {
     }
 
     private static boolean isMoveInput(String input) {
-        return input.equals("1") || input.equals("m") || input.equals("move");
+        return input.equals("m");
     }
 
     private static boolean isAttackInput(String input) {
-        return input.equals("2") || input.equals("f") || input.equals("attack");
+        return input.equals("f");
     }
 
     private static int parseDirection(String input) {
-        if (input.equals("a") || input.equals("left") || input.equals("1")) {
+        if (input.equals("a")) {
             return 1;
         }
 
-        if (input.equals("d") || input.equals("right") || input.equals("2")) {
+        if (input.equals("d")) {
             return 2;
         }
 
-        if (input.equals("w") || input.equals("up") || input.equals("3")) {
+        if (input.equals("w")) {
             return 3;
         }
 
-        if (input.equals("s") || input.equals("down") || input.equals("4")) {
+        if (input.equals("s")) {
             return 4;
         }
 
